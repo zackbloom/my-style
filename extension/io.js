@@ -2,12 +2,12 @@
   window.myStyle = window.myStyle || {};
 
   var MAX_TOTAL_SIZE = 5 * 1024 * 1024; /* 5 MB */
-  var STYLE_DIR = 'styles'
+  var STYLE_DIR = 'my-styles';
 
-  var _errHandler = function (e) {
+  var errHandler = function(error) {
     var msg = '';
 
-    switch (e.code) {
+    switch (error.code) {
       case FileError.QUOTA_EXCEEDED_ERR:
         msg = 'QUOTA_EXCEEDED_ERR';
         break;
@@ -31,69 +31,69 @@
     console.log('File Access Error: ' + msg);
   };
 
-  var _withFilesystem = function (cb){
-    var requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+  var getFilesystem = function(cb) {
+    var requestFileSystem = window.requestFileSystem || 
+      window.webkitRequestFileSystem;
 
-    window.webkitStorageInfo.requestQuota(PERSISTENT, MAX_TOTAL_SIZE, function(grantedSize){
-      requestFileSystem(PERSISTENT, grantedSize, cb, _errHandler);
-    }, _errHandler);
+    window.webkitStorageInfo.requestQuota(PERSISTENT, MAX_TOTAL_SIZE, 
+      function(grantedSize){
+        requestFileSystem(PERSISTENT, grantedSize, cb, errHandler);
+      }
+    , errHandler);
   }
 
-  var _getDirectory = function(fs, cb){
-    fs.root.getDirectory(STYLE_DIR, {create: true}, cb, _errHandler);
+  var getDirectory = function(fs, cb) {
+    fs.root.getDirectory(STYLE_DIR, { create: true }, cb, errHandler);
   };
 
-  var _withFileEntry = function(hash, options, cb){
-    _withFilesystem(function(fs){
-      _getDirectory(fs, function(dir){
+  var getFileEntry = function(hash, options, cb) {
+    getFilesystem(function(fs) {
+      getDirectory(fs, function(dir) {
 
         dir.getFile(hash + '.css', options, cb, function(err){
           if (err.code === FileError.NOT_FOUND_ERR)
             cb(undefined);
           else
-            _errHandler(err);
+            errHandler(err);
         });
-      }, _errHandler);
-    }, _errHandler);
+      }, errHandler);
+    }, errHandler);
   };
 
-  window.myStyle.loadStyle = function (hash, cb){
-    _withFileEntry(hash, {}, function(fileEntry){
+  window.myStyle.loadStyles = function (hash, cb) {
+    getFileEntry(hash, {}, function(fileEntry) {
 
       if (fileEntry === undefined){
-        // The file doesn't exist yet.
+        // The file doesn't exist yet
         cb(undefined);
         return;
       }
 
-      fileEntry.file(function(file){
+      fileEntry.file(function(file) {
         var reader = new FileReader();
 
-        reader.onloadend = function(){
+        reader.addEventListener('loadend', function(){
           cb(this.result);
-        }
+        });
 
         reader.readAsText(file);
-      }, _errHandler);
+      }, errHandler);
     });
   };
 
-  window.myStyle.saveStyle = function (hash, style, cb){
-    _withFileEntry(hash, {create: true}, function(fileEntry){
-
-      fileEntry.createWriter(function(writer){
+  window.myStyle.saveStyles = function (hash, style, cb) {
+    getFileEntry(hash, {create: true}, function(fileEntry) {
+      fileEntry.createWriter(function(writer) {
         
-        writer.onwriteend = function(e){
+        writer.addEventListener('writend', function() {
           cb && cb();
-        };
-
-        writer.onerror = _errHandler;
+        });
+        writer.addEventListener('error', errHandler);
 
         var blob = new Blob([style], {type: 'text/css'});
 
         writer.write(blob);
-
-      }, _errHandler);
+      }, errHandler);
     });
   };
 

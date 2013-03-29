@@ -6,9 +6,7 @@
   var SOFT_TAB = '    ';
   var SOFT_TAB_LENGTH = SOFT_TAB.length;
 
-  var hashPage = function(){
-    return document.location.host;
-  };
+  var PAGE_HASH = document.location.host;
 
   window.addEventListener('DOMContentLoaded', function(event) {
     var head = document.getElementsByTagName('head')[0];
@@ -24,7 +22,7 @@
     head.appendChild(style);
     body.appendChild(textarea);
 
-    window.myStyle.loadStyle(hashPage(), function(styles){
+    window.myStyle.loadStyles(PAGE_HASH, function(styles){
       style.innerHTML = styles || localStorage.myStyle || '';
       textarea.value = style.innerHTML;
 
@@ -36,7 +34,7 @@
       // continually update styles with textarea content
       textarea.addEventListener('keyup', function(event) {
         style.innerHTML = textarea.value;
-        window.myStyle.saveStyle(hashPage(), style.innerHTML);
+        window.myStyle.saveStyles(PAGE_HASH, style.innerHTML);
       });
 
       // pressing tab should insert spaces instead of focusing another element
